@@ -129,7 +129,19 @@ class TaskController extends Controller
         $in_progress = $tasks->where('status', 'in_progress')->count();
         $pending = $tasks->where('status', 'pending')->count();
 
-        return view('tasks.graph', compact('completed', 'in_progress', 'pending'));
+        $taskDates = json_encode(
+            $tasks
+                ->filter(fn (Task $task) => $task->deadline !== null)
+                ->map(fn (Task $task) => [
+                    'date' => $task->deadline->format('Y-m-d'),
+                    'priority' => $task->priority,
+                    'title' => $task->title,
+                ])
+                ->values()
+                ->all()
+        );
+
+        return view('tasks.graph', compact('completed', 'in_progress', 'pending', 'taskDates'));
     }
 
     public function track()

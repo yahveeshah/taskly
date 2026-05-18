@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{if(localStorage.getItem('taskly-theme')==='vintage')document.documentElement.setAttribute('data-theme','vintage');}catch(e){}})();</script>
     <title>Register - Taskly</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--lav:#C7A0CB;--navy:#000080;--yellow:#F6BE00;--ll:#f0e8f2}
+        :root{--lav:#C7A0CB;--navy:#000080;--yellow:#F6BE00;--ll:#f0e8f2;--lm:#dcc8de;--card:#fff;--sidebar:#000080;--muted:rgba(0,0,128,0.68)}
+        [data-theme="vintage"]{--lav:#D4A853;--navy:#2C1810;--yellow:#D4A853;--ll:#E8D9C0;--lm:#C4B49A;--card:#FAF7F2;--sidebar:#2C1810;--muted:rgba(44,24,16,0.68)}
         body{font-family:'DM Sans',sans-serif;background:var(--ll);color:var(--navy);min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-        .left{background:var(--navy);padding:4rem;display:flex;flex-direction:column;justify-content:space-between}
+        .left{background:var(--sidebar);padding:4rem;display:flex;flex-direction:column;justify-content:space-between}
         .logo{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--lav);font-weight:700;text-decoration:none}
         .logo span{color:#fff}
         .left-content{margin:auto 0}
@@ -25,20 +27,20 @@
         .sub{color:var(--navy);font-size:0.84rem;margin-bottom:2rem;opacity:0.6}
         .form-group{margin-bottom:1.1rem}
         .form-group label,.choice-title{display:block;font-size:0.72rem;font-weight:700;color:var(--navy);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:0.5rem}
-        .form-group input{width:100%;padding:0.78rem 1rem;background:#fff;border:2px solid var(--lav);border-radius:10px;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s}
+        .form-group input{width:100%;padding:0.78rem 1rem;background:var(--card);border:2px solid var(--lav);border-radius:10px;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s}
         .form-group input:focus{border-color:var(--navy)}
-        .choice-section{border-top:1px solid rgba(199,160,203,0.65);margin:1.4rem 0 1.1rem;padding-top:1.2rem}
+        .choice-section{border-top:1px solid var(--lm);margin:1.4rem 0 1.1rem;padding-top:1.2rem}
         .choice-section h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--navy);margin-bottom:0.8rem}
         .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem}
         .choice{cursor:pointer;display:block}
         .choice input{position:absolute;opacity:0;pointer-events:none}
-        .choice span{display:flex;align-items:center;justify-content:center;min-height:46px;background:#fff;border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.86rem;font-weight:700;text-align:center;transition:all 0.2s}
-        .choice input:checked + span{background:var(--navy);border-color:var(--navy);color:#fff}
+        .choice span{display:flex;align-items:center;justify-content:center;min-height:46px;background:var(--card);border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.86rem;font-weight:700;text-align:center;transition:all 0.2s}
+        .choice input:checked + span{background:var(--sidebar);border-color:var(--sidebar);color:#fff}
         .team-role,.team-code{display:none}
         .team-role.show,.team-code.show{display:block}
-        .btn-submit{width:100%;background:var(--navy);color:#fff;border:none;padding:0.88rem;border-radius:50px;font-weight:700;font-size:0.92rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:0.5rem}
+        .btn-submit{width:100%;background:var(--sidebar);color:#fff;border:none;padding:0.88rem;border-radius:50px;font-weight:700;font-size:0.92rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:0.5rem}
         .btn-submit:hover{background:var(--lav);color:var(--navy)}
-        .link{text-align:center;margin-top:1.2rem;font-size:0.82rem;color:rgba(0,0,128,0.68)}
+        .link{text-align:center;margin-top:1.2rem;font-size:0.82rem;color:var(--muted)}
         .link a{color:var(--navy);text-decoration:none;font-weight:700}
         .error{color:#c0392b;font-size:0.74rem;margin-top:0.4rem}
         .flash-banner{background:var(--yellow);border:none;border-radius:50px;box-shadow:0 4px 16px rgba(0,0,128,0.15);color:var(--navy);font-size:0.88rem;font-weight:700;margin:0 auto 1.2rem;max-width:420px;padding:0.75rem 2rem;text-align:center;width:max-content;animation:flash-fade 0.35s ease-in 2.65s forwards}
