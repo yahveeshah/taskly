@@ -7,9 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
+        html,body{margin:0;padding:0}
         :root{--lav:#C7A0CB;--navy:#000080;--yellow:#F6BE00;--ll:#f0e8f2}
         body{font-family:'DM Sans',sans-serif;background:var(--ll);color:var(--navy);min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-        .left{background:var(--navy);padding:4rem;display:flex;flex-direction:column;justify-content:space-between}
+        .left{background:var(--navy);padding:4rem;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh}
         .logo{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--lav);font-weight:700;text-decoration:none}
         .logo span{color:#fff}
         .left-content{margin:auto 0}
@@ -18,7 +19,7 @@
         .left p{color:var(--lav);line-height:1.9;font-size:0.92rem;opacity:0.85}
         .footer-note{color:rgba(199,160,203,0.45);font-size:0.78rem;letter-spacing:1.5px}
         .right{padding:4rem;display:flex;align-items:center;justify-content:center;background:var(--ll)}
-        .form-box{width:100%;max-width:380px}
+        .form-box{width:100%;max-width:420px}
         .home-link{color:var(--navy);text-decoration:none;font-size:0.82rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:2.5rem;font-weight:500;opacity:0.65;transition:opacity 0.2s}
         .home-link:hover{opacity:1}
         .form-box h1{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;margin-bottom:0.3rem;color:var(--navy)}
@@ -35,7 +36,7 @@
         .alert-error{background:#fce8e8;border:1.5px solid #e0a0a0;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.84rem;color:#a00}
         .flash-banner{background:var(--yellow);border:none;border-radius:50px;box-shadow:0 4px 16px rgba(0,0,128,0.15);color:var(--navy);font-size:0.88rem;font-weight:700;margin:0 auto 1.2rem;max-width:420px;padding:0.75rem 2rem;text-align:center;width:max-content;animation:flash-fade 0.35s ease-in 2.65s forwards}
         @keyframes flash-fade{to{opacity:0}}
-        @media (max-width:760px){body{grid-template-columns:1fr}.left{padding:2rem;min-height:280px}.right{padding:2rem}}
+        @media (max-width:760px){body{grid-template-columns:1fr}.left{padding:2rem;min-height:100vh}.right{padding:2rem}}
     </style>
 </head>
 <body>

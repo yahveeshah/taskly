@@ -5,6 +5,7 @@ use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TeamController;
 
 Route::get('/', function () { return view('home'); });
 Route::get('/register', [RegisterController::class, 'create'])->name('register');
@@ -22,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/progress', [TaskController::class, 'progress'])->name('progress');
     Route::get('/graph', [TaskController::class, 'graph'])->name('graph');
     Route::get('/track', [TaskController::class, 'track'])->name('track');
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::get('/team/members/{user}', [TeamController::class, 'member'])->name('team.member');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');

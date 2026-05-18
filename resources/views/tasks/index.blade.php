@@ -2,6 +2,9 @@
 <style>
 .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
 .task-total{font-size:0.83rem;color:rgba(0,0,128,0.55)}
+.manager-filter{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap}
+.manager-filter label{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(0,0,128,0.58)}
+.manager-filter select{background:#fff;border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.84rem;font-weight:700;padding:0.55rem 1rem;outline:none}
 .columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem}
 .col-header{display:flex;align-items:center;gap:0.6rem;padding:0.8rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:0.75rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase}
 .col-high .col-header{background:#fce8e8;color:#900}
@@ -36,10 +39,23 @@
 
 <div class="toolbar">
     <div class="task-total">{{ $tasks->count() }} task{{ $tasks->count() !== 1 ? 's' : '' }} total</div>
+    @if(auth()->user()->isManager())
+    <form class="manager-filter" method="GET" action="{{ route('tasks') }}">
+        <label for="memberFilter">Filter by member</label>
+        <select id="memberFilter" name="member_id" onchange="this.form.submit()">
+            <option value="">All team tasks</option>
+            @foreach($teamUsers as $teamUser)
+                <option value="{{ $teamUser->id }}" @selected($selectedMemberId === $teamUser->id)>{{ $teamUser->name }}</option>
+            @endforeach
+        </select>
+    </form>
+    @endif
+    @unless(auth()->user()->isMember())
     <button class="ui-button ui-button-primary" type="button" onclick="document.getElementById('addModal').classList.add('open')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Task
     </button>
+    @endunless
 </div>
 
 <div class="columns">
@@ -68,9 +84,14 @@
             <span class="ui-tag ui-tag-deadline {{ $near ? 'is-near' : '' }}">Due {{ $dl->format('d M Y') }}{{ $near ? ' - Soon' : '' }}</span>
             @endif
             <span class="ui-tag ui-tag-status-{{ $task->status }}">{{ ucfirst(str_replace('_',' ',$task->status)) }}</span>
+            @if(auth()->user()->isManager())
+            <span class="ui-tag ui-tag-priority-low">{{ $task->user->name }}</span>
+            @endif
         </div>
         <div class="actions">
-            <button type="button" class="ui-button ui-button-sm ui-button-secondary" onclick='openEdit(@js($task->id), @js($task->title), @js($task->description), @js($task->priority), @js(optional($task->deadline)->format("Y-m-d")))'>Edit</button>
+            @unless(auth()->user()->isMember())
+            <button type="button" class="ui-button ui-button-sm ui-button-secondary" onclick='openEdit(@js($task->id), @js($task->title), @js($task->description), @js($task->priority), @js(optional($task->deadline)->format("Y-m-d")), @js($task->user_id === auth()->id() ? "" : $task->user_id))'>Edit</button>
+            @endunless
             @if($task->status === 'pending')
             <form class="form-inline" method="POST" action="{{ route('tasks.status', $task) }}">
                 @csrf @method('PATCH')
@@ -85,10 +106,12 @@
                 <button type="submit" class="ui-button ui-button-sm ui-button-success">Done</button>
             </form>
             @endif
+            @unless(auth()->user()->isMember())
             <form class="form-inline" method="POST" action="{{ route('tasks.destroy', $task) }}">
                 @csrf @method('DELETE')
                 <button type="submit" class="ui-button ui-button-sm ui-button-danger" onclick="return confirm('Delete this task?')">Delete</button>
             </form>
+            @endunless
         </div>
     </div>
     @empty
@@ -98,6 +121,7 @@
 @endforeach
 </div>
 
+@unless(auth()->user()->isMember())
 <div class="modal-overlay" id="addModal">
 <div class="modal">
     <h2>New Task</h2>
@@ -109,6 +133,17 @@
             <div class="ui-field"><label>Priority</label><select name="priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
             <div class="ui-field"><label>Deadline</label><input type="date" name="deadline" required></div>
         </div>
+        @if(auth()->user()->isManager())
+        <div class="ui-field">
+            <label>Assign To</label>
+            <select name="assigned_user_id">
+                <option value="">Me</option>
+                @foreach($assignableMembers as $member)
+                    <option value="{{ $member->id }}">{{ $member->name }} - {{ $member->email }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <div class="modal-actions">
             <button type="button" class="ui-button ui-button-secondary" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
             <button type="submit" class="ui-button ui-button-primary">Save Task</button>
@@ -128,6 +163,17 @@
             <div class="ui-field"><label>Priority</label><select name="priority" id="ePriority"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
             <div class="ui-field"><label>Deadline</label><input type="date" name="deadline" id="eDeadline"></div>
         </div>
+        @if(auth()->user()->isManager())
+        <div class="ui-field">
+            <label>Assign To</label>
+            <select name="assigned_user_id" id="eAssigned">
+                <option value="">Me</option>
+                @foreach($assignableMembers as $member)
+                    <option value="{{ $member->id }}">{{ $member->name }} - {{ $member->email }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <div class="modal-actions">
             <button type="button" class="ui-button ui-button-secondary" onclick="document.getElementById('editModal').classList.remove('open')">Cancel</button>
             <button type="submit" class="ui-button ui-button-primary">Update Task</button>
@@ -135,14 +181,16 @@
     </form>
 </div>
 </div>
+@endunless
 
 <script>
-function openEdit(id,title,desc,priority,deadline){
+function openEdit(id,title,desc,priority,deadline,assignedId){
     document.getElementById('editForm').action = '/tasks/' + id;
     document.getElementById('eTitle').value = title || '';
     document.getElementById('eDesc').value = desc || '';
     document.getElementById('ePriority').value = priority || 'medium';
     document.getElementById('eDeadline').value = deadline || '';
+    if (document.getElementById('eAssigned')) document.getElementById('eAssigned').value = assignedId || '';
     document.getElementById('editModal').classList.add('open');
 }
 window.onclick = function(e){
