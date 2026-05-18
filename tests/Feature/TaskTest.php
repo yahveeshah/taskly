@@ -133,7 +133,7 @@ class TaskTest extends TestCase
             'deadline' => '2026-06-01',
         ]);
 
-        foreach ([route('tasks'), route('progress'), route('graph'), route('track'), route('profile.edit')] as $url) {
+        foreach ([route('dashboard'), route('tasks'), route('progress'), route('graph'), route('track'), route('profile.edit')] as $url) {
             $this->actingAs($user)
                 ->get($url)
                 ->assertOk();

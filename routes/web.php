@@ -15,6 +15,7 @@ Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [TaskController::class, 'dashboard'])->name('dashboard');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');

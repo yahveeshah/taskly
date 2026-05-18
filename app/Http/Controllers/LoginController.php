@@ -18,7 +18,7 @@ class LoginController extends Controller
 
         if (auth()->attempt($validated)) {
             session()->regenerate();
-            return redirect('/')->with('success', "Welcome back! You're now logged in. 👋");
+            return redirect()->route('dashboard')->with('success', "Welcome back! You're now logged in. 👋");
         }
 
         return back()->withErrors([

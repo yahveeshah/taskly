@@ -13,7 +13,7 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password', 'use_type', 'role', 'team_id'];
+    protected $fillable = ['name', 'email', 'password', 'use_type', 'role', 'team_id', 'streak', 'last_streak_date'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -27,6 +27,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_streak_date' => 'date',
         ];
     }
 
