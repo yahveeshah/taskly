@@ -1,7 +1,7 @@
 <x-layout title="My Team">
 <style>
 .team-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.team-code{background:var(--yellow);color:var(--navy);border-radius:50px;font-size:0.88rem;font-weight:800;padding:0.65rem 1.2rem;letter-spacing:1px}
+.team-code{background:#fff;border:1.5px solid #e0e0e0;color:var(--navy);border-radius:50px;font-size:0.88rem;font-weight:800;padding:0.65rem 1.2rem;letter-spacing:1px}
 .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
 .member-card{padding:1.3rem 1.4rem;text-decoration:none;color:var(--navy);display:block;transition:all 0.2s}
 .member-card:hover{transform:translateY(-2px);border-color:var(--lav)}

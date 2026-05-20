@@ -4,7 +4,7 @@
     @endif
     <div class="task-title">
         @if($task->status === 'completed')
-            <span class="tick">&#10003;</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
         @endif
         {{ $task->title }}
     </div>

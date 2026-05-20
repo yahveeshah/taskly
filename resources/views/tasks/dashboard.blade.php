@@ -8,8 +8,8 @@
 @endphp
 <style>
 .dash-greeting{font-family:'Cormorant Garamond',serif;font-size:2.75rem;font-weight:700;color:var(--navy);line-height:1.15;margin-bottom:0.85rem}
-.streak-pill{display:inline-flex;align-items:center;gap:0.35rem;background:var(--yellow);color:var(--navy);font-size:0.78rem;font-weight:700;padding:0.35rem 0.9rem;border-radius:50px;margin-bottom:2rem;letter-spacing:0.2px}
-[data-theme="vintage"] .streak-pill{background:#D4A853;color:var(--navy)}
+.streak-pill{display:inline-flex;align-items:center;gap:0.35rem;background:#fff;border:1.5px solid #e0e0e0;color:var(--navy);font-size:0.78rem;font-weight:700;padding:0.35rem 0.9rem;border-radius:50px;margin-bottom:2rem;letter-spacing:0.2px}
+[data-theme="vintage"] .streak-pill{background:var(--card);border-color:var(--lm)}
 .stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.2rem;margin-bottom:2rem}
 .stat-card{padding:1.8rem;text-align:center}
 .stat-num{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;line-height:1}
@@ -57,9 +57,9 @@
 
 <h1 class="dash-greeting">{{ $greeting }}, {{ explode(' ', $name)[0] }}</h1>
 @if($streak > 0)
-<span class="streak-pill">🔥 {{ $streak }} day streak</span>
+<span class="streak-pill">{{ $streak }} day streak</span>
 @else
-<span class="streak-pill">🔥 Start your streak today</span>
+<span class="streak-pill">Start your streak today</span>
 @endif
 
 <div class="stats-row">
@@ -111,7 +111,7 @@
     @endforeach
 </div>
 @else
-<p class="dash-clear">You're all clear today! 🎉</p>
+<p class="dash-clear">You're all clear today!</p>
 @endif
 
 <h2 class="section-title">Coming Up</h2>

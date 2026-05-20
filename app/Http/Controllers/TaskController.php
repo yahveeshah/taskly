@@ -132,7 +132,7 @@ class TaskController extends Controller
             'user_id' => $assigneeId,
         ]);
 
-        return back()->with('success', "Task added successfully! Let's get it done. ✅");
+        return back()->with('success', "Task added successfully! Let's get it done.");
     }
 
     public function update(Request $request, Task $task)
@@ -153,7 +153,7 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        return back()->with('success', 'Task updated successfully! 📝');
+        return back()->with('success', 'Task updated successfully!');
     }
 
     public function updateStatus(Request $request, Task $task)
@@ -171,8 +171,8 @@ class TaskController extends Controller
         }
 
         $message = match ($validated['status']) {
-            'in_progress' => 'Task marked as In Progress! Keep going 🔥',
-            'completed' => 'Task completed! Nicely done 🏆',
+            'in_progress' => 'Task marked as In Progress! Keep going.',
+            'completed' => 'Task completed! Nicely done.',
             default => 'Status updated.',
         };
 
@@ -186,7 +186,7 @@ class TaskController extends Controller
 
         $task->delete();
 
-        return back()->with('success', 'Task deleted. 🗑️');
+        return back()->with('success', 'Task deleted.');
     }
 
     public function progress()
@@ -220,7 +220,7 @@ class TaskController extends Controller
 
     public function track()
     {
-        $tasks = $this->visibleTasksQuery(auth()->user())->orderBy('deadline')->get();
+        $tasks = $this->visibleTasksQuery(auth()->user())->orderByDesc('created_at')->get();
 
         return view('tasks.track', compact('tasks'));
     }

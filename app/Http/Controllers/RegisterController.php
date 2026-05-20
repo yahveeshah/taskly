@@ -52,10 +52,10 @@ class RegisterController extends Controller
 
             $user->update(['team_id' => $team->id]);
 
-            return redirect('/')->with('success', "Welcome to Taskly! Your account has been created. 🎉 Share your Team Code: {$code}");
+            return redirect('/')->with('success', "Welcome to Taskly! Your account has been created. Share your Team Code: {$code}");
         }
 
-        return redirect('/')->with('success', 'Welcome to Taskly! Your account has been created. 🎉');
+        return redirect('/')->with('success', 'Welcome to Taskly! Your account has been created.');
     }
 
     private function generateTeamCode(): string

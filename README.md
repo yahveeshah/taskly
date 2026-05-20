@@ -1,58 +1,175 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Taskly
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A warm, focused task manager built with Laravel — organize your work, track progress, and stay ahead of every deadline.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Authentication and accounts
+- Session-based registration and login
+- Personal mode or group/team mode at signup
+- Manager and member roles with team codes (`TEAM-xxxx`)
+- Profile editing (name, email, password)
+- Role-based authorization via policies
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Task management
+- Full task CRUD with title, description, priority, and deadline
+- Three priority columns: High, Medium, Low
+- Drag-and-drop between columns using SortableJS
+- Status workflow: Pending, In Progress, Completed
+- Deadline alerts for tasks due soon
+- Managers can assign tasks to team members and filter by member
 
-## Learning Laravel
+### Dashboard and insights
+- Personalized greeting with time-of-day message
+- Streak tracker for consecutive completion days
+- Stat cards: Total, Completed, In Progress, Pending
+- Weekly summary with completion rate and motivating copy
+- Tasks due today and upcoming deadlines (next 7 days)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Progress and visualization
+- Progress page with encouraging status cards
+- Vertical bar graph of task status breakdown
+- Deadline calendar widget on the graph page
+- Track page for overdue and upcoming task overview
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Team mode
+- Manager team dashboard with shareable team code
+- Member cards with completion stats and progress bars
+- Per-member drilldown with task list and progress graph
+- Members can update their own task status; managers control creation and assignment
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Design and UX
+- Two complete themes: **Lavender** and **Vintage**
+- Collapsible sidebar with icon-only mode and tooltips
+- Topbar with page title, date, and profile dropdown on every authenticated page
+- Smooth page transitions and theme persistence via `localStorage`
+- Avatar colors generated consistently from the user's name
+- Flash message banners for success feedback
+- Responsive layout for tablet and mobile
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | Laravel, PHP |
+| Database | SQLite |
+| Views | Blade templates |
+| Frontend | Vanilla JavaScript, inline CSS |
+| Drag and drop | SortableJS (CDN) |
+| Fonts | Cormorant Garamond, DM Sans (Google Fonts) |
+| Auth | Laravel session guard |
+
+---
+
+## Themes
+
+### Lavender
+The default theme — soft lavender accents (`#C7A0CB`), navy sidebar (`#000080`), gold highlights (`#F6BE00`), and a light lavender page background with a subtle dot texture. Clean, modern, and calm.
+
+### Vintage
+A warm editorial feel — espresso sidebar (`#2C1810`), cream backgrounds (`#FAF8F5`, `#FAF7F2`), gold accents (`#D4A853`), and tan borders (`#C4B49A`). Same layout and features, richer and more tactile.
+
+Both themes are toggled via `data-theme="vintage"` on the `<html>` element and saved in `localStorage` under `taskly-theme`.
+
+---
+
+## Local setup
+
+### Requirements
+- PHP 8.2+
+- Composer
+- [Laravel Herd](https://herd.laravel.com/) (recommended) or any local PHP server
+
+### Installation
 
 ```bash
-composer require laravel/boost --dev
+# Clone or navigate to the project
+cd C:\Users\Admin\Herd\project
 
-php artisan boost:install
+# Install PHP dependencies
+composer install
+
+# Copy environment file and generate app key
+cp .env.example .env
+php artisan key:generate
+
+# Create the SQLite database file
+touch database/database.sqlite
+
+# Run migrations
+php artisan migrate
+
+# (Optional) Seed or create a user via /register in the browser
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Running locally
 
-## Contributing
+**With Laravel Herd** — if the project lives under your Herd directory, it is served automatically:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+http://project.test
+```
 
-## Code of Conduct
+**With Artisan** — alternative for any environment:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan serve
+```
 
-## Security Vulnerabilities
+Then open `http://127.0.0.1:8000`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### First steps
+1. Visit the home page and click **Register**
+2. Choose **Personal Use** or **Group / Team Use**
+3. For teams: managers receive a team code to share; members join with that code
+4. Log in and explore Dashboard, Tasks, Progress, Graph, and Track
+
+### Running tests
+
+```bash
+php artisan test
+```
+
+---
+
+## Screenshots
+
+> Screenshots coming soon.
+
+| Page | Preview |
+|------|---------|
+| Home | _Landing page with hero, features, and CTA_ |
+| Dashboard | _Greeting, stats, weekly summary, due today_ |
+| Tasks | _Priority columns with drag-and-drop cards_ |
+| Progress | _Status cards with encouraging messages_ |
+| Graph | _Bar chart and deadline calendar_ |
+| Team | _Manager dashboard with member overview_ |
+| Lavender theme | _Default lavender and navy palette_ |
+| Vintage theme | _Warm cream and espresso palette_ |
+
+---
+
+## Project structure
+
+```
+app/
+  Http/Controllers/   Task, Team, Auth, Profile controllers
+  Models/             User, Task, Team
+  Policies/           TaskPolicy
+resources/views/
+  components/         layout.blade.php (shared authenticated shell)
+  tasks/              Dashboard, tasks, progress, graph, track
+  team/               Team index and member drilldown
+  auth/               Login and register
+routes/web.php        All application routes
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-source software. See the repository license file for details.

@@ -15,7 +15,13 @@
 .col-low .dot{background:var(--lav)}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .col-count{margin-left:auto;background:rgba(0,0,0,0.08);border-radius:50px;padding:0.1rem 0.5rem;font-size:0.7rem}
-.task-card{padding:1.1rem 1.2rem;margin-bottom:0.9rem;transition:all 0.2s;position:relative}
+.sortable-column{min-height:4rem;border-radius:12px;padding:0.25rem;transition:outline 0.2s ease,background 0.2s ease}
+.sortable-column.drag-over{outline:2px dashed var(--lav);outline-offset:4px;background:rgba(199,160,203,0.08)}
+[data-theme="vintage"] .sortable-column.drag-over{background:rgba(212,168,83,0.12)}
+@keyframes task-card-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.task-card{padding:1.1rem 1.2rem;margin-bottom:0.9rem;transition:border-color 0.2s,box-shadow 0.2s,transform 0.2s;position:relative;animation:task-card-in 0.45s ease both;cursor:grab}
+.task-card:active{cursor:grabbing}
+.task-card.sortable-ghost{opacity:0.45}
 .task-card:hover{transform:translateY(-2px);border-color:var(--lav)}
 .task-card.completed{border-left:4px solid #27ae60;background:#fbfffc}
 .task-card.in_progress{border-left:4px solid var(--yellow)}
@@ -26,10 +32,14 @@
 .task-desc{font-size:0.8rem;color:rgba(0,0,128,0.68);margin-bottom:0.7rem;line-height:1.6;overflow-wrap:anywhere}
 .meta{display:flex;flex-wrap:wrap;gap:0.45rem;margin-bottom:0.8rem}
 .actions{display:flex;gap:0.45rem;flex-wrap:wrap}
+.actions .ui-button{transition:transform 0.15s ease,background 0.2s ease,color 0.2s ease,border-color 0.2s ease}
+.actions .ui-button:hover{transform:scale(1.06)}
 .form-inline{display:inline}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
-.modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:20px;padding:2rem;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,128,0.15)}
+.sortable-column:has(.task-card) .col-empty{display:none}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.28s ease,visibility 0.28s ease}
+.modal-overlay.open{opacity:1;visibility:visible;pointer-events:auto}
+.modal{background:var(--card);border-radius:20px;padding:2rem;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,128,0.15);transform:scale(0.96);opacity:0;transition:transform 0.28s ease,opacity 0.28s ease}
+.modal-overlay.open .modal{transform:scale(1);opacity:1}
 .modal h2{font-family:'Cormorant Garamond',serif;font-size:1.7rem;color:var(--navy);font-weight:700;margin-bottom:1.3rem}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .modal-actions{display:flex;gap:0.8rem;justify-content:flex-end;margin-top:1.2rem;flex-wrap:wrap}
@@ -58,20 +68,31 @@
     @endunless
 </div>
 
+@php $cardIndex = 0; @endphp
 <div class="columns">
 @foreach(['high'=>'High Priority','medium'=>'Medium Priority','low'=>'Low Priority'] as $p=>$label)
 @php $filtered = $tasks->where('priority', $p); @endphp
 <div class="col-{{ $p === 'medium' ? 'med' : ($p === 'high' ? 'high' : 'low') }}">
     <div class="col-header">
         <span class="dot"></span>{{ $label }}
-        <span class="col-count">{{ $filtered->count() }}</span>
+        <span class="col-count" data-col-count="{{ $p }}">{{ $filtered->count() }}</span>
     </div>
+    <div class="sortable-column" data-priority="{{ $p }}">
     @forelse($filtered as $task)
     @php
         $dl = $task->deadline;
         $near = $dl && $dl->diffInDays(now()) <= 2 && $dl->isFuture();
+        $delay = $cardIndex * 0.06;
+        $cardIndex++;
     @endphp
-    <div class="task-card ui-card {{ $task->status }}">
+    <div class="task-card ui-card {{ $task->status }}"
+        style="animation-delay:{{ $delay }}s"
+        data-task-id="{{ $task->id }}"
+        data-title="{{ e($task->title) }}"
+        data-description="{{ e($task->description ?? '') }}"
+        data-priority="{{ $task->priority }}"
+        data-deadline="{{ optional($task->deadline)->format('Y-m-d') }}"
+        data-assigned-id="{{ auth()->user()->isManager() && $task->user_id !== auth()->id() ? $task->user_id : '' }}">
         <div class="task-name {{ $task->status === 'completed' ? 'done-text' : '' }}">
             @if($task->status === 'completed')
             <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -115,8 +136,9 @@
         </div>
     </div>
     @empty
-    <div class="ui-empty">No tasks here</div>
+    <div class="ui-empty col-empty">No tasks here</div>
     @endforelse
+    </div>
 </div>
 @endforeach
 </div>
@@ -197,4 +219,84 @@ window.onclick = function(e){
     if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
 }
 </script>
+
+@unless(auth()->user()->isMember())
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    function updateCounts() {
+        document.querySelectorAll('[data-col-count]').forEach(function (badge) {
+            var priority = badge.getAttribute('data-col-count');
+            var column = document.querySelector('.sortable-column[data-priority="' + priority + '"]');
+            var count = column ? column.querySelectorAll('.task-card').length : 0;
+            badge.textContent = count;
+        });
+    }
+
+    function clearDragOver() {
+        document.querySelectorAll('.sortable-column').forEach(function (col) {
+            col.classList.remove('drag-over');
+        });
+    }
+
+    document.querySelectorAll('.sortable-column').forEach(function (column) {
+        new Sortable(column, {
+            group: 'task-priorities',
+            animation: 180,
+            draggable: '.task-card',
+            ghostClass: 'sortable-ghost',
+            filter: '.col-empty',
+            onMove: function (evt) {
+                clearDragOver();
+                if (evt.to) evt.to.classList.add('drag-over');
+                return true;
+            },
+            onEnd: function (evt) {
+                clearDragOver();
+                var card = evt.item;
+                if (!card.classList.contains('task-card')) return;
+
+                var newPriority = evt.to.dataset.priority;
+                var oldPriority = card.dataset.priority;
+                if (newPriority === oldPriority) return;
+
+                var fromEl = evt.from;
+                var oldIndex = evt.oldIndex;
+                card.dataset.priority = newPriority;
+
+                var body = new FormData();
+                body.append('_method', 'PATCH');
+                body.append('_token', csrf);
+                body.append('title', card.dataset.title);
+                body.append('description', card.dataset.description || '');
+                body.append('priority', newPriority);
+                body.append('deadline', card.dataset.deadline || '');
+                if (card.dataset.assignedId) {
+                    body.append('assigned_user_id', card.dataset.assignedId);
+                }
+
+                fetch('/tasks/' + card.dataset.taskId, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: body
+                }).then(function (res) {
+                    if (!res.ok) throw new Error('Request failed');
+                    updateCounts();
+                }).catch(function () {
+                    card.dataset.priority = oldPriority;
+                    var ref = fromEl.children[oldIndex] || null;
+                    fromEl.insertBefore(card, ref);
+                    updateCounts();
+                });
+            }
+        });
+    });
+})();
+</script>
+@endunless
 </x-layout>
