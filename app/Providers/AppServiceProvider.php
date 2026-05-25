@@ -15,5 +15,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(\App\Models\Task::class, \App\Policies\TaskPolicy::class);
+        \App\Models\User::observe(\App\Observers\UserObserver::class);
     }
 }

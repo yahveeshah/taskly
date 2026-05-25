@@ -22,4 +22,9 @@ class Team extends Model
     {
         return $this->hasMany(User::class)->where('role', 'member');
     }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
 }

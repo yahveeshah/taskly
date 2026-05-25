@@ -11,7 +11,7 @@ class TeamController extends Controller
         $manager = auth()->user();
         abort_unless($manager->isManager() && $manager->team_id, 403);
 
-        $members = User::with('tasks')
+        $members = User::with(['tasks' => fn ($query) => $query->where('is_personal', false)])
             ->where('team_id', $manager->team_id)
             ->where('role', 'member')
             ->orderBy('name')
@@ -34,7 +34,7 @@ class TeamController extends Controller
             403
         );
 
-        $tasks = $user->tasks()->orderBy('created_at', 'desc')->get();
+        $tasks = $user->tasks()->where('is_personal', false)->orderBy('created_at', 'desc')->get();
         $completed = $tasks->where('status', 'completed')->count();
         $in_progress = $tasks->where('status', 'in_progress')->count();
         $pending = $tasks->where('status', 'pending')->count();

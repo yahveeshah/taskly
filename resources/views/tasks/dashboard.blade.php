@@ -51,8 +51,25 @@
 .modal h2{font-family:'Cormorant Garamond',serif;font-size:1.7rem;color:var(--navy);font-weight:700;margin-bottom:1.3rem}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .modal-actions{display:flex;gap:0.8rem;justify-content:flex-end;margin-top:1.2rem;flex-wrap:wrap}
+.dash-ai-widget{position:fixed;right:1.6rem;bottom:1.6rem;z-index:260}
+.dash-ai-toggle{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--lm);background:var(--navy);color:#fff;box-shadow:0 10px 28px rgba(0,0,128,0.18);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.18s ease,background 0.18s ease,color 0.18s ease}
+.dash-ai-toggle:hover,.dash-ai-toggle[aria-expanded="true"]{background:var(--lav);color:var(--navy);transform:translateY(-2px)}
+.dash-ai-panel{position:absolute;right:0;bottom:64px;width:min(340px,calc(100vw - 2rem));height:430px;display:none;flex-direction:column;overflow:hidden}
+.dash-ai-panel.open{display:flex}
+.dash-ai-head{padding:0.9rem 1rem;border-bottom:1px solid var(--lm);display:flex;align-items:center;justify-content:space-between;gap:0.75rem}
+.dash-ai-title{font-size:0.9rem;font-weight:800;color:var(--navy);margin:0}
+.dash-ai-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--lm);background:transparent;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dash-ai-messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.7rem}
+.dash-ai-msg{max-width:84%;border-radius:12px;padding:0.65rem 0.8rem;font-size:0.82rem;line-height:1.45;word-break:break-word}
+.dash-ai-msg.user{align-self:flex-end;background:var(--lav);color:var(--navy);border-bottom-right-radius:4px}
+.dash-ai-msg.assistant{align-self:flex-start;background:var(--surface-field);border:1px solid var(--lm);color:var(--navy);border-bottom-left-radius:4px}
+.dash-ai-typing{align-self:flex-start;color:var(--muted-text);font-size:0.78rem;font-weight:700}
+.dash-ai-form{border-top:1px solid var(--lm);padding:0.8rem;display:flex;gap:0.5rem;background:var(--card)}
+.dash-ai-input{flex:1;min-width:0;border:1px solid var(--lm);border-radius:10px;background:var(--surface-field);color:var(--navy);font-size:0.82rem;padding:0.65rem 0.75rem;outline:none}
+.dash-ai-input:focus{border-color:var(--lav)}
+.dash-ai-send{padding:0.58rem 0.9rem;border-radius:10px}
 @media (max-width:900px){.stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){.stats-row,.weekly-grid,.row2{grid-template-columns:1fr}.dash-greeting{font-size:2.1rem}}
+@media (max-width:640px){.stats-row,.weekly-grid,.row2{grid-template-columns:1fr}.dash-greeting{font-size:2.1rem}.dash-ai-widget{right:1rem;bottom:1rem}.dash-ai-panel{height:390px}}
 </style>
 
 <h1 class="dash-greeting">{{ $greeting }}, {{ explode(' ', $name)[0] }}</h1>
@@ -179,4 +196,158 @@ window.onclick = function(e){
 }
 </script>
 @endunless
+
+<div class="dash-ai-widget" id="dashAiWidget">
+    <div class="dash-ai-panel ui-card" id="dashAiPanel" aria-live="polite">
+        <div class="dash-ai-head">
+            <h2 class="dash-ai-title">Taskly AI</h2>
+            <button type="button" class="dash-ai-close" id="dashAiClose" aria-label="Close AI chat">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="dash-ai-messages" id="dashAiMessages">
+            <div class="dash-ai-msg assistant">Hi, I'm Taskly AI. Ask me about your tasks or progress.</div>
+        </div>
+        <form class="dash-ai-form" id="dashAiForm">
+            <input class="dash-ai-input" id="dashAiInput" type="text" placeholder="Ask Taskly AI..." autocomplete="off" required>
+            <button type="submit" class="ui-button ui-button-primary dash-ai-send" id="dashAiSend">Send</button>
+        </form>
+    </div>
+    <button type="button" class="dash-ai-toggle" id="dashAiToggle" aria-label="Open AI chat" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v2a6 6 0 0 0 12 0V9a6 6 0 0 0-6-6Z"/><path d="M8 15v2a4 4 0 0 0 8 0v-2"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M10 13h4"/></svg>
+    </button>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var panel = document.getElementById('dashAiPanel');
+    var toggle = document.getElementById('dashAiToggle');
+    var close = document.getElementById('dashAiClose');
+    var form = document.getElementById('dashAiForm');
+    var input = document.getElementById('dashAiInput');
+    var send = document.getElementById('dashAiSend');
+    var messages = document.getElementById('dashAiMessages');
+    var csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    function setOpen(open) {
+        panel.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute('aria-label', open ? 'Close AI chat' : 'Open AI chat');
+        if (open) input.focus();
+    }
+
+    function appendMessage(role, text) {
+        var div = document.createElement('div');
+        div.className = 'dash-ai-msg ' + role;
+        var body = document.createElement('span');
+        body.dataset.messageText = 'true';
+        body.textContent = text;
+        div.appendChild(body);
+        if (role === 'assistant') {
+            var cursor = document.createElement('span');
+            cursor.dataset.streamCursor = 'true';
+            cursor.textContent = '|';
+            div.appendChild(cursor);
+        }
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    toggle.addEventListener('click', function () {
+        setOpen(!panel.classList.contains('open'));
+    });
+
+    close.addEventListener('click', function () {
+        setOpen(false);
+    });
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var text = input.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        input.value = '';
+        input.disabled = true;
+        send.disabled = true;
+
+        var typing = document.createElement('div');
+        typing.className = 'dash-ai-typing';
+        typing.textContent = 'Taskly AI is typing...';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+        var blink = null;
+        var cursor = null;
+
+        try {
+            var response = await fetch('/ai/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ message: text })
+            });
+
+            if (!response.ok) {
+                throw new Error('AI request failed');
+            }
+
+            if (!response.body) {
+                throw new Error('Streaming is not supported');
+            }
+
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder();
+            var assistant = appendMessage('assistant', '');
+            var assistantText = assistant.querySelector('[data-message-text]');
+            cursor = assistant.querySelector('[data-stream-cursor]');
+            blink = setInterval(function () {
+                cursor.style.visibility = cursor.style.visibility === 'hidden' ? 'visible' : 'hidden';
+            }, 450);
+            var started = false;
+
+            while (true) {
+                var result = await reader.read();
+                if (result.done) break;
+
+                var chunk = decoder.decode(result.value, { stream: true });
+                if (!chunk) continue;
+
+                if (!started) {
+                    typing.remove();
+                    started = true;
+                }
+
+                assistantText.textContent += chunk;
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            var finalChunk = decoder.decode();
+            if (finalChunk) {
+                if (!started) {
+                    typing.remove();
+                    started = true;
+                }
+                assistantText.textContent += finalChunk;
+            }
+
+            typing.remove();
+            clearInterval(blink);
+            cursor.remove();
+        } catch (error) {
+            typing.remove();
+            if (blink) clearInterval(blink);
+            if (cursor) cursor.remove();
+            var errorMessage = appendMessage('assistant', 'Failed to get response. Please try again.');
+            errorMessage.querySelector('[data-stream-cursor]')?.remove();
+        } finally {
+            input.disabled = false;
+            send.disabled = false;
+            input.focus();
+        }
+    });
+});
+</script>
 </x-layout>

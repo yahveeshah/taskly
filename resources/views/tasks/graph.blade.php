@@ -14,6 +14,9 @@
 .total{font-size:0.82rem;color:var(--muted-text);margin-bottom:1rem;opacity:0.85}
 .graph-page-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:stretch}
 .graph-card,.cal-card{height:100%}
+.graph-filter{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;margin-bottom:1rem}
+.graph-filter label{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(0,0,128,0.58)}
+.graph-filter select{background:#fff;border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.84rem;font-weight:700;padding:0.55rem 1rem;outline:none}
 @media (max-width:560px){.graph-card{padding:1.4rem}.bar-wrap{gap:1rem;padding:0;min-height:220px}.bar-label{font-size:0.7rem}.legend{gap:0.8rem}}
 .cal-card{background:var(--card);border:1.5px solid var(--lm);border-radius:20px;padding:2.5rem;max-width:380px;box-shadow:0 8px 24px var(--shadow-card)}
 .cal-card h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--navy);margin-bottom:1.5rem}
@@ -42,36 +45,48 @@ $ih = round(($in_progress / $max) * 220);
 $ph = round(($pending / $max) * 220);
 @endphp
 
+@if(auth()->user()->isManager())
+<div class="graph-filter">
+    <label for="graphMemberFilter">Filter by member</label>
+    <select id="graphMemberFilter">
+        <option value="">All Members</option>
+        @foreach($teamMembers as $member)
+            <option value="{{ $member->id }}">{{ $member->name }}</option>
+        @endforeach
+    </select>
+</div>
+@endif
+
 <div class="graph-page-grid">
 <div class="graph-card ui-card">
     <h2>Your Progress at a Glance</h2>
     <div class="bar-wrap">
         <div class="bar-col">
             <div class="bar-stage">
-                <div class="bar" style="background:var(--navy);height:{{ $ch }}px">
-                    <span class="bar-val">{{ $completed }}</span>
+                <div class="bar" id="completedBar" style="background:var(--navy);height:{{ $ch }}px">
+                    <span class="bar-val" id="completedVal">{{ $completed }}</span>
                 </div>
             </div>
             <div class="bar-label">Completed</div>
         </div>
         <div class="bar-col">
             <div class="bar-stage">
-                <div class="bar" style="background:var(--yellow);height:{{ $ih }}px">
-                    <span class="bar-val">{{ $in_progress }}</span>
+                <div class="bar" id="inProgressBar" style="background:var(--yellow);height:{{ $ih }}px">
+                    <span class="bar-val" id="inProgressVal">{{ $in_progress }}</span>
                 </div>
             </div>
             <div class="bar-label">In Progress</div>
         </div>
         <div class="bar-col">
             <div class="bar-stage">
-                <div class="bar" style="background:var(--lav);height:{{ $ph }}px">
-                    <span class="bar-val">{{ $pending }}</span>
+                <div class="bar" id="pendingBar" style="background:var(--lav);height:{{ $ph }}px">
+                    <span class="bar-val" id="pendingVal">{{ $pending }}</span>
                 </div>
             </div>
             <div class="bar-label">Pending</div>
         </div>
     </div>
-    <div class="total">Total: {{ $total }} task{{ $total !== 1 ? 's' : '' }}</div>
+    <div class="total" id="graphTotal">Total: {{ $total }} task{{ $total !== 1 ? 's' : '' }}</div>
     <div class="legend">
         <div class="leg"><div class="leg-dot" style="background:var(--navy)"></div>Completed</div>
         <div class="leg"><div class="leg-dot" style="background:var(--yellow)"></div>In Progress</div>
@@ -96,16 +111,22 @@ const taskDates = {!! $taskDates !!};
     const priorityRank = { high: 3, medium: 2, low: 1 };
     const priorityClass = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' };
 
-    const byDate = {};
-    taskDates.forEach(function (item) {
-        if (!byDate[item.date]) byDate[item.date] = [];
-        byDate[item.date].push(item);
-    });
-
     function highestPriority(tasks) {
         return tasks.reduce(function (best, t) {
             return (priorityRank[t.priority] || 0) > (priorityRank[best] || 0) ? t.priority : best;
         }, 'low');
+    }
+
+    function statusCount(tasks, status) {
+        return tasks.filter(function (task) {
+            return task.status === status;
+        }).length;
+    }
+
+    function updateBar(barId, valueId, value, max) {
+        const height = Math.round((value / max) * 220);
+        document.getElementById(barId).style.height = height + 'px';
+        document.getElementById(valueId).textContent = value;
     }
 
     const now = new Date();
@@ -118,6 +139,29 @@ const taskDates = {!! $taskDates !!};
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const grid = document.getElementById('calGrid');
+
+    function render(memberId) {
+        const filtered = memberId
+            ? taskDates.filter(function (task) { return String(task.user_id) === String(memberId); })
+            : taskDates;
+
+        const completed = statusCount(filtered, 'completed');
+        const inProgress = statusCount(filtered, 'in_progress');
+        const pending = statusCount(filtered, 'pending');
+        const max = Math.max(completed, inProgress, pending, 1);
+        const total = completed + inProgress + pending;
+
+        updateBar('completedBar', 'completedVal', completed, max);
+        updateBar('inProgressBar', 'inProgressVal', inProgress, max);
+        updateBar('pendingBar', 'pendingVal', pending, max);
+        document.getElementById('graphTotal').textContent = 'Total: ' + total + ' task' + (total !== 1 ? 's' : '');
+
+        const byDate = {};
+        filtered.forEach(function (item) {
+            if (!byDate[item.date]) byDate[item.date] = [];
+            byDate[item.date].push(item);
+        });
+
     grid.innerHTML = '';
 
     for (let i = 0; i < firstDay; i++) {
@@ -146,6 +190,17 @@ const taskDates = {!! $taskDates !!};
         }
 
         grid.appendChild(cell);
+    }
+
+    }
+
+    render('');
+
+    const filter = document.getElementById('graphMemberFilter');
+    if (filter) {
+        filter.addEventListener('change', function () {
+            render(filter.value);
+        });
     }
 })();
 </script>

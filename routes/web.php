@@ -17,6 +17,9 @@ Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [TaskController::class, 'dashboard'])->name('dashboard');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks');
+    Route::get('/tasks/history', [TaskController::class, 'history'])->name('tasks.history');
+    Route::delete('/tasks/history/selected', [TaskController::class, 'destroySelected'])->name('tasks.history.selected');
+    Route::delete('/tasks/history/all', [TaskController::class, 'destroyAll'])->name('tasks.history.all');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
@@ -28,7 +31,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/team/members/{user}', [TeamController::class, 'member'])->name('team.member');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    Route::get('/ai/chat', [\App\Http\Controllers\AiChatController::class, 'index'])->name('ai.chat.index');
+    Route::post('/ai/chat', [\App\Http\Controllers\AiChatController::class, 'store'])->name('ai.chat.store');
+    Route::delete('/ai/chat', [\App\Http\Controllers\AiChatController::class, 'destroy'])->name('ai.chat.destroy');
+    
+    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+    Route::get('/chat/members', [\App\Http\Controllers\ChatController::class, 'getTeamMembers'])->name('chat.members');
 });
 
 

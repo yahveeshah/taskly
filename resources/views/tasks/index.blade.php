@@ -65,6 +65,11 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Task
     </button>
+    @else
+    <button class="ui-button ui-button-primary" type="button" onclick="document.getElementById('personalAddModal').classList.add('open')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Personal Task
+    </button>
     @endunless
 </div>
 
@@ -83,6 +88,7 @@
         $dl = $task->deadline;
         $near = $dl && $dl->diffInDays(now()) <= 2 && $dl->isFuture();
         $delay = $cardIndex * 0.06;
+        $canManageTask = ! auth()->user()->isMember() || $task->is_personal;
         $cardIndex++;
     @endphp
     <div class="task-card ui-card {{ $task->status }}"
@@ -108,31 +114,34 @@
             @if(auth()->user()->isManager())
             <span class="ui-tag ui-tag-priority-low">{{ $task->user->name }}</span>
             @endif
+            @if($task->is_personal)
+            <span class="ui-tag ui-tag-priority-low">Personal</span>
+            @endif
         </div>
         <div class="actions">
-            @unless(auth()->user()->isMember())
+            @if($canManageTask)
             <button type="button" class="ui-button ui-button-sm ui-button-secondary" onclick='openEdit(@js($task->id), @js($task->title), @js($task->description), @js($task->priority), @js(optional($task->deadline)->format("Y-m-d")), @js($task->user_id === auth()->id() ? "" : $task->user_id))'>Edit</button>
-            @endunless
-            @if($task->status === 'pending')
+            @endif
+            @if($task->is_personal || $task->status === 'pending')
             <form class="form-inline" method="POST" action="{{ route('tasks.status', $task) }}">
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="in_progress">
                 <button type="submit" class="ui-button ui-button-sm ui-button-warning">In Progress</button>
             </form>
             @endif
-            @if($task->status !== 'completed')
+            @if($task->is_personal || $task->status !== 'completed')
             <form class="form-inline" method="POST" action="{{ route('tasks.status', $task) }}">
                 @csrf @method('PATCH')
                 <input type="hidden" name="status" value="completed">
                 <button type="submit" class="ui-button ui-button-sm ui-button-success">Done</button>
             </form>
             @endif
-            @unless(auth()->user()->isMember())
+            @if($canManageTask)
             <form class="form-inline" method="POST" action="{{ route('tasks.destroy', $task) }}">
                 @csrf @method('DELETE')
                 <button type="submit" class="ui-button ui-button-sm ui-button-danger" onclick="return confirm('Delete this task?')">Delete</button>
             </form>
-            @endunless
+            @endif
         </div>
     </div>
     @empty
@@ -173,6 +182,29 @@
     </form>
 </div>
 </div>
+@endunless
+
+@if(auth()->user()->isMember())
+<div class="modal-overlay" id="personalAddModal">
+<div class="modal">
+    <h2>New Personal Task</h2>
+    <form method="POST" action="{{ route('tasks.store') }}">
+        @csrf
+        <input type="hidden" name="is_personal" value="1">
+        <div class="ui-field"><label>Task Title</label><input type="text" name="title" placeholder="What needs to be done?" required></div>
+        <div class="ui-field"><label>Description</label><textarea name="description" placeholder="Optional details..."></textarea></div>
+        <div class="row2">
+            <div class="ui-field"><label>Priority</label><select name="priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+            <div class="ui-field"><label>Deadline</label><input type="date" name="deadline" required></div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="ui-button ui-button-secondary" onclick="document.getElementById('personalAddModal').classList.remove('open')">Cancel</button>
+            <button type="submit" class="ui-button ui-button-primary">Save Task</button>
+        </div>
+    </form>
+</div>
+</div>
+@endif
 
 <div class="modal-overlay" id="editModal">
 <div class="modal">
@@ -203,7 +235,6 @@
     </form>
 </div>
 </div>
-@endunless
 
 <script>
 function openEdit(id,title,desc,priority,deadline,assignedId){

@@ -17,4 +17,33 @@ class ProfileController extends Controller
         auth()->user()->update(['password'=>bcrypt($request->password)]);
         return back()->with('success', 'Password changed successfully!');
     }
+
+    public function destroy(Request $request) {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = auth()->user();
+
+        if ($user->isManager()) {
+            $team = $user->managedTeam;
+            if ($team) {
+                $team->members()->update([
+                    'team_id' => null,
+                    'role' => null,
+                    'use_type' => 'personal'
+                ]);
+                $team->delete();
+            }
+        }
+
+        auth()->logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/')->with('success', 'Your account has been successfully deleted.');
+    }
 }

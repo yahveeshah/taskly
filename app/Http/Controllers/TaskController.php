@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
@@ -21,65 +22,75 @@ class TaskController extends Controller
         $today = now()->startOfDay();
         $weekStart = now()->startOfWeek();
 
-        $total = $tasks->count();
-        $completed = $tasks->where('status', 'completed')->count();
-        $inProgress = $tasks->where('status', 'in_progress')->count();
-        $pending = $tasks->where('status', 'pending')->count();
+        // Cache the dashboard stats for 5 minutes
+        $stats = Cache::remember("dashboard_stats_{$user->id}", now()->addMinutes(5), function() use ($tasks, $today, $weekStart) {
+            $total = $tasks->count();
+            $completed = $tasks->where('status', 'completed')->count();
+            $inProgress = $tasks->where('status', 'in_progress')->count();
+            $pending = $tasks->where('status', 'pending')->count();
 
-        $dueToday = $tasks
-            ->filter(fn (Task $task) => $task->deadline?->isSameDay($today) && $task->status !== 'completed')
+            $dueToday = $tasks
+                ->filter(fn (Task $task) => $task->deadline?->isSameDay($today) && $task->status !== 'completed')
+                ->pluck('id')
+                ->toArray();
+
+            $comingUp = $tasks
+                ->filter(function (Task $task) use ($today) {
+                    if (! $task->deadline || $task->status === 'completed') {
+                        return false;
+                    }
+
+                    $deadline = $task->deadline->startOfDay();
+
+                    return $deadline->gt($today) && $deadline->lte($today->copy()->addDays(7));
+                })
+                ->sortBy('deadline')
+                ->pluck('id')
+                ->toArray();
+
+            $createdThisWeek = $tasks->filter(
+                fn (Task $task) => $task->created_at && $task->created_at->gte($weekStart)
+            )->count();
+
+            $completedThisWeek = $tasks->filter(
+                fn (Task $task) => $task->status === 'completed'
+                    && $task->updated_at
+                    && $task->updated_at->gte($weekStart)
+            )->count();
+
+            $weeklyCompletionPercent = $createdThisWeek > 0
+                ? (int) round(($completedThisWeek / $createdThisWeek) * 100)
+                : ($completedThisWeek > 0 ? 100 : 0);
+
+            $overdueCount = $tasks->filter(
+                fn (Task $task) => $task->deadline
+                    && $task->deadline->lt($today)
+                    && $task->status !== 'completed'
+            )->count();
+
+            return compact(
+                'total', 'completed', 'inProgress', 'pending', 'dueToday', 
+                'comingUp', 'weeklyCompletionPercent', 'completedThisWeek', 'overdueCount'
+            );
+        });
+
+        // Reconstruct Collections from cached IDs to keep the view working
+        $stats['dueToday'] = $tasks->whereIn('id', $stats['dueToday'])->values();
+        
+        // Ensure comingUp retains its sorted order
+        $stats['comingUp'] = collect($stats['comingUp'])
+            ->map(fn($id) => $tasks->firstWhere('id', $id))
+            ->filter()
             ->values();
-
-        $comingUp = $tasks
-            ->filter(function (Task $task) use ($today) {
-                if (! $task->deadline || $task->status === 'completed') {
-                    return false;
-                }
-
-                $deadline = $task->deadline->startOfDay();
-
-                return $deadline->gt($today) && $deadline->lte($today->copy()->addDays(7));
-            })
-            ->sortBy('deadline')
-            ->values();
-
-        $createdThisWeek = $tasks->filter(
-            fn (Task $task) => $task->created_at && $task->created_at->gte($weekStart)
-        )->count();
-
-        $completedThisWeek = $tasks->filter(
-            fn (Task $task) => $task->status === 'completed'
-                && $task->updated_at
-                && $task->updated_at->gte($weekStart)
-        )->count();
-
-        $weeklyCompletionPercent = $createdThisWeek > 0
-            ? (int) round(($completedThisWeek / $createdThisWeek) * 100)
-            : ($completedThisWeek > 0 ? 100 : 0);
-
-        $overdueCount = $tasks->filter(
-            fn (Task $task) => $task->deadline
-                && $task->deadline->lt($today)
-                && $task->status !== 'completed'
-        )->count();
 
         $streak = $this->syncUserStreak($user);
         $assignableMembers = $this->assignableMembers($user);
 
-        return view('tasks.dashboard', [
+        return view('tasks.dashboard', array_merge([
             'name' => $user->name,
-            'total' => $total,
-            'completed' => $completed,
-            'inProgress' => $inProgress,
-            'pending' => $pending,
-            'dueToday' => $dueToday,
-            'comingUp' => $comingUp,
-            'weeklyCompletionPercent' => $weeklyCompletionPercent,
-            'completedThisWeek' => $completedThisWeek,
-            'overdueCount' => $overdueCount,
             'streak' => $streak,
             'assignableMembers' => $assignableMembers,
-        ]);
+        ], $stats));
     }
 
     public function index(Request $request)
@@ -87,7 +98,10 @@ class TaskController extends Controller
         $user = auth()->user();
         $selectedMemberId = null;
 
-        $tasksQuery = $this->visibleTasksQuery($user)->with('user')->orderBy('deadline');
+        $tasksQuery = $this->visibleTasksQuery($user)
+            ->where('status', '!=', 'completed')
+            ->with('user')
+            ->orderBy('deadline');
 
         if ($user->isManager() && $request->filled('member_id')) {
             $selectedMemberId = (int) $request->member_id;
@@ -112,7 +126,6 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        abort_if($user->isMember(), 403);
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -120,9 +133,17 @@ class TaskController extends Controller
             'priority' => ['required', Rule::in(['high', 'medium', 'low'])],
             'deadline' => ['required', 'date'],
             'assigned_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'is_personal' => ['nullable', 'boolean'],
         ]);
 
-        $assigneeId = $this->resolveAssigneeId($user, $validated['assigned_user_id'] ?? null);
+        $isPersonal = $user->isMember() && $request->boolean('is_personal');
+
+        if ($user->isMember()) {
+            abort_unless($isPersonal, 403);
+            $assigneeId = $user->id;
+        } else {
+            $assigneeId = $this->resolveAssigneeId($user, $validated['assigned_user_id'] ?? null);
+        }
 
         Task::create([
             'title' => $validated['title'],
@@ -130,7 +151,11 @@ class TaskController extends Controller
             'priority' => $validated['priority'],
             'deadline' => $validated['deadline'],
             'user_id' => $assigneeId,
+            'is_personal' => $isPersonal,
         ]);
+
+        // Invalidate dashboard stats cache when a new task is created
+        Cache::forget("dashboard_stats_{$user->id}");
 
         return back()->with('success', "Task added successfully! Let's get it done.");
     }
@@ -138,7 +163,7 @@ class TaskController extends Controller
     public function update(Request $request, Task $task)
     {
         $this->authorize('update', $task);
-        abort_if(auth()->user()->isMember(), 403);
+        $user = auth()->user();
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -148,10 +173,23 @@ class TaskController extends Controller
             'assigned_user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $validated['user_id'] = $this->resolveAssigneeId(auth()->user(), $validated['assigned_user_id'] ?? $task->user_id);
+        if ($user->isMember()) {
+            abort_unless($task->is_personal && $task->user_id === $user->id, 403);
+            unset($validated['assigned_user_id']);
+            $task->update($validated);
+
+            return back()->with('success', 'Task updated successfully!');
+        }
+
+        $validated['user_id'] = $this->resolveAssigneeId($user, $validated['assigned_user_id'] ?? $task->user_id);
         unset($validated['assigned_user_id']);
 
         $task->update($validated);
+
+        // Invalidate dashboard stats cache when a task is updated
+        Cache::forget("dashboard_stats_{$user->id}");
+        // Invalidate history cache in case status or other details changed for completed task
+        Cache::forget("completed_tasks_{$user->id}");
 
         return back()->with('success', 'Task updated successfully!');
     }
@@ -165,6 +203,10 @@ class TaskController extends Controller
         ]);
 
         $task->update(['status' => $validated['status']]);
+
+        $user = auth()->user();
+        Cache::forget("dashboard_stats_{$user->id}");
+        Cache::forget("completed_tasks_{$user->id}");
 
         if ($validated['status'] === 'completed') {
             $this->syncUserStreak($task->user);
@@ -182,26 +224,100 @@ class TaskController extends Controller
     public function destroy(Task $task)
     {
         $this->authorize('delete', $task);
-        abort_if(auth()->user()->isMember(), 403);
+        $user = auth()->user();
+
+        if ($user->isMember()) {
+            abort_unless($task->is_personal && $task->user_id === $user->id, 403);
+        }
 
         $task->delete();
+
+        Cache::forget("dashboard_stats_{$user->id}");
+        Cache::forget("completed_tasks_{$user->id}");
 
         return back()->with('success', 'Task deleted.');
     }
 
+    public function history()
+    {
+        $user = auth()->user();
+        
+        // Cache history tasks for 10 minutes
+        $tasks = Cache::remember("completed_tasks_{$user->id}", now()->addMinutes(10), function() use ($user) {
+            return $this->visibleTasksQuery($user)
+                ->where('status', 'completed')
+                ->with('user')
+                ->orderByDesc('updated_at')
+                ->get()
+                ->toArray();
+        });
+
+        return view('tasks.history', compact('tasks'));
+    }
+
+    public function destroySelected(Request $request)
+    {
+        $user = auth()->user();
+        $validated = $request->validate([
+            'task_ids' => ['required', 'array'],
+            'task_ids.*' => ['integer'],
+        ]);
+
+        $tasksToDelete = Task::whereIn('id', $validated['task_ids'])->get();
+
+        foreach ($tasksToDelete as $task) {
+            $this->authorize('delete', $task);
+            if ($user->isMember()) {
+                abort_unless($task->is_personal && $task->user_id === $user->id, 403);
+            }
+            $task->delete();
+        }
+
+        Cache::forget("dashboard_stats_{$user->id}");
+        Cache::forget("completed_tasks_{$user->id}");
+
+        return back()->with('success', 'Selected tasks have been deleted.');
+    }
+
+    public function destroyAll()
+    {
+        $user = auth()->user();
+        
+        $tasksToDelete = $this->visibleTasksQuery($user)
+            ->where('status', 'completed')
+            ->get();
+
+        foreach ($tasksToDelete as $task) {
+            $this->authorize('delete', $task);
+            if ($user->isMember()) {
+                abort_unless($task->is_personal && $task->user_id === $user->id, 403);
+            }
+            $task->delete();
+        }
+
+        Cache::forget("dashboard_stats_{$user->id}");
+        Cache::forget("completed_tasks_{$user->id}");
+
+        return back()->with('success', 'All completed tasks have been deleted.');
+    }
+
     public function progress()
     {
-        $tasks = $this->visibleTasksQuery(auth()->user())->orderBy('created_at', 'desc')->get();
+        $user = auth()->user();
+        $tasks = $this->visibleTasksQuery($user)->with('user')->orderBy('created_at', 'desc')->get();
+        $teamMembers = $this->filterableMembers($user);
 
-        return view('tasks.progress', compact('tasks'));
+        return view('tasks.progress', compact('tasks', 'teamMembers'));
     }
 
     public function graph()
     {
-        $tasks = $this->visibleTasksQuery(auth()->user())->get();
+        $user = auth()->user();
+        $tasks = $this->visibleTasksQuery($user)->with('user')->get();
         $completed = $tasks->where('status', 'completed')->count();
         $in_progress = $tasks->where('status', 'in_progress')->count();
         $pending = $tasks->where('status', 'pending')->count();
+        $teamMembers = $this->filterableMembers($user);
 
         $taskDates = json_encode(
             $tasks
@@ -210,19 +326,23 @@ class TaskController extends Controller
                     'date' => $task->deadline->format('Y-m-d'),
                     'priority' => $task->priority,
                     'title' => $task->title,
+                    'status' => $task->status,
+                    'user_id' => $task->user_id,
                 ])
                 ->values()
                 ->all()
         );
 
-        return view('tasks.graph', compact('completed', 'in_progress', 'pending', 'taskDates'));
+        return view('tasks.graph', compact('completed', 'in_progress', 'pending', 'taskDates', 'teamMembers'));
     }
 
     public function track()
     {
-        $tasks = $this->visibleTasksQuery(auth()->user())->orderByDesc('created_at')->get();
+        $user = auth()->user();
+        $tasks = $this->visibleTasksQuery($user)->with('user')->orderByDesc('created_at')->get();
+        $teamMembers = $this->filterableMembers($user);
 
-        return view('tasks.track', compact('tasks'));
+        return view('tasks.track', compact('tasks', 'teamMembers'));
     }
 
     private function syncUserStreak(User $user): int
@@ -275,7 +395,8 @@ class TaskController extends Controller
     private function visibleTasksQuery(User $user)
     {
         if ($user->isManager() && $user->team_id) {
-            return Task::whereIn('user_id', $this->teamUserIds($user));
+            return Task::whereIn('user_id', $this->teamUserIds($user))
+                ->where('is_personal', false);
         }
 
         return $user->tasks();
@@ -291,6 +412,18 @@ class TaskController extends Controller
             ->where('role', 'member')
             ->orderBy('name')
             ->get();
+    }
+
+    private function filterableMembers(User $user)
+    {
+        if (! $user->isManager() || ! $user->team_id) {
+            return collect();
+        }
+
+        return User::where('team_id', $user->team_id)
+            ->where('role', 'member')
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function teamUserIds(User $user)

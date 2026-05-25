@@ -16,6 +16,9 @@
 .prog-enc{font-size:0.75rem;color:#7a5c00;margin-top:0.5rem;font-style:italic}
 .prog-dl{font-size:0.72rem;color:rgba(0,0,128,0.55);margin-top:0.3rem}
 .graph-link{margin-top:2rem}
+.progress-filter{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;margin-bottom:1rem}
+.progress-filter label{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(0,0,128,0.58)}
+.progress-filter select{background:#fff;border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.84rem;font-weight:700;padding:0.55rem 1rem;outline:none}
 @media (max-width:720px){.stats-row{grid-template-columns:1fr}}
 </style>
 
@@ -30,17 +33,29 @@ $encouragements = [
 ];
 @endphp
 
+@if(auth()->user()->isManager())
+<div class="progress-filter">
+    <label for="progressMemberFilter">Filter by member</label>
+    <select id="progressMemberFilter">
+        <option value="">All Members</option>
+        @foreach($teamMembers as $member)
+            <option value="{{ $member->id }}">{{ $member->name }}</option>
+        @endforeach
+    </select>
+</div>
+@endif
+
 <div class="stats-row">
     <div class="stat-card ui-card">
-        <div class="stat-num c">{{ $completed->count() }}</div>
+        <div class="stat-num c" data-progress-stat="completed">{{ $completed->count() }}</div>
         <div class="stat-label">Completed</div>
     </div>
     <div class="stat-card ui-card">
-        <div class="stat-num i">{{ $in_progress->count() }}</div>
+        <div class="stat-num i" data-progress-stat="in_progress">{{ $in_progress->count() }}</div>
         <div class="stat-label">In Progress</div>
     </div>
     <div class="stat-card ui-card">
-        <div class="stat-num p">{{ $pending->count() }}</div>
+        <div class="stat-num p" data-progress-stat="pending">{{ $pending->count() }}</div>
         <div class="stat-label">Pending</div>
     </div>
 </div>
@@ -51,7 +66,7 @@ $encouragements = [
 <div class="section-title">{{ $label }}</div>
 <div class="prog-grid">
     @foreach($group as $i=>$task)
-    <div class="prog-card ui-card {{ $task->status }}">
+    <div class="prog-card ui-card {{ $task->status }}" data-member-id="{{ $task->user_id }}" data-status="{{ $task->status }}">
         <div class="prog-name">
             @if($task->status === 'completed')
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -76,4 +91,32 @@ $encouragements = [
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     Your Progress Graph
 </a>
+@if(auth()->user()->isManager())
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var filter = document.getElementById('progressMemberFilter');
+    if (!filter) return;
+
+    function applyFilter() {
+        var memberId = filter.value;
+        var counts = { completed: 0, in_progress: 0, pending: 0 };
+
+        document.querySelectorAll('.prog-card[data-member-id]').forEach(function (card) {
+            var visible = !memberId || card.dataset.memberId === memberId;
+            card.style.display = visible ? '' : 'none';
+            if (visible && counts[card.dataset.status] !== undefined) {
+                counts[card.dataset.status]++;
+            }
+        });
+
+        Object.keys(counts).forEach(function (status) {
+            var stat = document.querySelector('[data-progress-stat="' + status + '"]');
+            if (stat) stat.textContent = counts[status];
+        });
+    }
+
+    filter.addEventListener('change', applyFilter);
+});
+</script>
+@endif
 </x-layout>

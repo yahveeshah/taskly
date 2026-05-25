@@ -37,5 +37,33 @@
             <button type="submit" class="ui-button ui-button-primary">Update Password</button>
         </form>
     </div>
+    <div class="profile-card ui-card" style="grid-column: 1 / -1; margin-top: 1.5rem; border-color: #e74c3c;">
+        <h2 style="color: #900;">Danger Zone</h2>
+        <p style="margin-bottom: 1rem; font-size: 0.88rem; color: var(--navy);">Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.</p>
+        <button type="button" class="ui-button ui-button-danger" onclick="document.getElementById('deleteAccountModal').style.display='flex'">Delete Account</button>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="deleteAccountModal" style="display: {{ $errors->userDeletion->isNotEmpty() ? 'flex' : 'none' }}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="ui-card" style="width: 100%; max-width: 450px; padding: 2rem;">
+            <h2 style="color: #900; font-size: 1.4rem; margin-bottom: 1rem;">Delete Account</h2>
+            <p style="margin-bottom: 1.5rem; font-size: 0.9rem;">Are you sure you want to delete your account? This action cannot be undone.</p>
+            <form method="POST" action="{{ route('profile.destroy') }}">
+                @csrf
+                @method('DELETE')
+                <div class="ui-field">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="Enter your password to confirm">
+                    @error('password', 'userDeletion')
+                        <p class="error">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="ui-button ui-button-secondary" onclick="document.getElementById('deleteAccountModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="ui-button ui-button-danger">Delete Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 </x-layout>

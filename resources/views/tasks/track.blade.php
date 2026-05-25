@@ -31,10 +31,24 @@
 .track-pill-in_progress{background:#fff8e1;color:var(--warning-text)}
 .track-pill-pending{background:var(--ll);color:var(--navy)}
 .track-empty{text-align:center;padding:3rem 1.5rem;color:var(--muted-text);font-size:0.9rem}
+.track-filter{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;margin-bottom:1rem}
+.track-filter label{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(0,0,128,0.58)}
+.track-filter select{background:#fff;border:2px solid var(--lav);border-radius:50px;color:var(--navy);font-size:0.84rem;font-weight:700;padding:0.55rem 1rem;outline:none}
 </style>
 
 <div class="track-page">
     <h2 class="track-heading">Task Timeline</h2>
+    @if(auth()->user()->isManager())
+    <div class="track-filter">
+        <label for="trackMemberFilter">Filter by member</label>
+        <select id="trackMemberFilter">
+            <option value="">All Members</option>
+            @foreach($teamMembers as $member)
+                <option value="{{ $member->id }}">{{ $member->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    @endif
 
     @if($tasks->count())
     <div class="track-card">
@@ -42,6 +56,9 @@
             <table class="track-table">
                 <thead>
                     <tr>
+                        @if(auth()->user()->isManager())
+                        <th>Name</th>
+                        @endif
                         <th>Task Name</th>
                         <th>Priority</th>
                         <th>Started At</th>
@@ -75,7 +92,10 @@
                             $timeTaken = 'Pending';
                         }
                     @endphp
-                    <tr>
+                    <tr data-member-id="{{ $task->user_id }}">
+                        @if(auth()->user()->isManager())
+                        <td>{{ $task->user->name }}</td>
+                        @endif
                         <td class="track-name">{{ $task->title }}</td>
                         <td>
                             <span class="track-priority track-priority-{{ $task->priority }}">
@@ -103,4 +123,19 @@
     </div>
     @endif
 </div>
+@if(auth()->user()->isManager())
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var filter = document.getElementById('trackMemberFilter');
+    if (!filter) return;
+
+    filter.addEventListener('change', function () {
+        var memberId = filter.value;
+        document.querySelectorAll('.track-table tbody tr[data-member-id]').forEach(function (row) {
+            row.style.display = !memberId || row.dataset.memberId === memberId ? '' : 'none';
+        });
+    });
+});
+</script>
+@endif
 </x-layout>

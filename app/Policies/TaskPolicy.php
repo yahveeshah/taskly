@@ -19,6 +19,7 @@ class TaskPolicy
     {
         return $user->isManager()
             && $user->team_id !== null
+            && ! $task->is_personal
             && $task->user?->team_id === $user->team_id;
     }
 }

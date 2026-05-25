@@ -44,7 +44,10 @@
         .sidebar-collapse-btn:hover{background:var(--nav-hover-bg);color:var(--highlight)}
         .sidebar-collapse-btn svg{transition:transform 0.25s ease}
         html.sidebar-collapsed .sidebar-collapse-btn svg{transform:rotate(180deg)}
-        .sidebar nav{display:flex;flex-direction:column;gap:0.3rem;flex:1}
+        .sidebar nav{display:flex;flex-direction:column;gap:0.3rem;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--lav) transparent}
+        .sidebar nav::-webkit-scrollbar{width:6px}
+        .sidebar nav::-webkit-scrollbar-track{background:transparent}
+        .sidebar nav::-webkit-scrollbar-thumb{background:var(--lav);border-radius:999px}
         .sidebar nav a{color:var(--nav-fade);text-decoration:none;padding:0.75rem 1rem;border-radius:10px;font-size:0.88rem;font-weight:500;display:flex;align-items:center;gap:0.7rem;transition:background 0.2s ease,color 0.2s ease,padding 0.25s ease}
         .sidebar nav a svg{flex-shrink:0}
         .sidebar nav a .nav-label{white-space:nowrap;overflow:hidden;transition:opacity 0.2s ease,width 0.25s ease}
@@ -217,12 +220,26 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span class="nav-label">Track</span>
         </a>
+        @if(auth()->user()->use_type === 'group')
+        <a href="/chat" class="{{ request()->is('chat*') ? 'active' : '' }}" data-tooltip="Team Chat">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span class="nav-label">Team Chat</span>
+        </a>
+        @endif
+        <a href="/ai/chat" class="{{ request()->is('ai/chat') ? 'active' : '' }}" data-tooltip="AI Assistant">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 7.1"></path><path d="M12 12l9.9 4.9"></path></svg>
+            <span class="nav-label">AI Assistant</span>
+        </a>
         @if(auth()->user()->isManager())
         <a href="{{ route('team.index') }}" class="{{ request()->is('team*') ? 'active' : '' }}" data-tooltip="My Team">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="nav-label">My Team</span>
         </a>
         @endif
+        <a href="/tasks/history" class="{{ request()->is('tasks/history') ? 'active' : '' }}" data-tooltip="My History">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="nav-label">My History</span>
+        </a>
         <a href="/profile/edit" class="{{ request()->is('profile/edit') ? 'active' : '' }}" data-tooltip="Profile">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             <span class="nav-label">Profile</span>
@@ -275,8 +292,8 @@
                 </div>
                 <div class="nav-dropdown-divider" role="presentation"></div>
                 <a href="{{ route('dashboard') }}" role="menuitem">Dashboard</a>
-                <a href="{{ route('tasks') }}" role="menuitem">Tasks</a>
                 <a href="{{ route('profile.edit') }}" role="menuitem">Profile</a>
+                <a href="{{ route('graph') }}" role="menuitem">Graph</a>
                 <div class="nav-dropdown-divider" role="presentation"></div>
                 <button type="button" class="nav-dropdown-link" id="layoutDropdownThemeToggle" aria-label="Toggle color theme">
                     <svg id="layoutThemeIconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -390,6 +407,7 @@
             e.stopPropagation();
         });
     }
+
 
     var sidebarKey = 'taskly-sidebar';
     var sidebar = document.getElementById('appSidebar');
