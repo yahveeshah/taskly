@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>(function(){try{if(localStorage.getItem('taskly-theme')==='vintage')document.documentElement.setAttribute('data-theme','vintage');}catch(e){}})();</script>
-    <title>Login - Taskly</title>
+    <title>Reset Password - Taskly</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -62,9 +62,6 @@
         .link a{color:var(--navy);text-decoration:none;font-weight:700}
         .error{color:#c0392b;font-size:0.74rem;margin-top:0.4rem}
         .alert-error{background:#fce8e8;border:1.5px solid #e0a0a0;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.84rem;color:#a00}
-        .alert-success{background:#e8fced;border:1.5px solid #a0e0b0;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.84rem;color:#0a0}
-        .flash-banner{background:#fff;border:1.5px solid #e0e0e0;border-radius:50px;box-shadow:0 4px 16px rgba(0,0,128,0.08);color:var(--navy);font-size:0.88rem;font-weight:700;margin:0 auto 1.2rem;max-width:420px;padding:0.75rem 2rem;text-align:center;width:max-content;animation:flash-fade 0.35s ease-in 2.65s forwards}
-        @keyframes flash-fade{to{opacity:0}}
         @media (max-width:760px){body{grid-template-columns:1fr}.left{padding:2rem;min-height:100vh}.right{padding:2rem}}
     </style>
 </head>
@@ -72,76 +69,73 @@
     <div class="left">
         <a href="/" class="logo">Task<span>ly</span></a>
         <div class="left-content">
-            <h2>Welcome <em>back.</em></h2>
-            <p>Sign in and pick up right where you left off. Your tasks are waiting.</p>
+            <h2>Choose a new <em>password.</em></h2>
+            <p>Ensure your account is secure by using a strong password with at least 6 characters.</p>
         </div>
         <div class="footer-note">TASKLY &copy; 2026</div>
     </div>
     <div class="right">
         <div class="form-box">
-            <a href="/" class="home-link">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                Back to Home
-            </a>
-            <h1>Sign In</h1>
-            <p class="sub">Enter your credentials to continue.</p>
-            @if(session('success'))
-                <div class="flash-banner">{{ session('success') }}</div>
-            @endif
-            @if(session('status'))
-                <div class="alert-success">{{ session('status') }}</div>
-            @endif
+            <h1>Reset Password</h1>
+            <p class="sub">Enter your new password below.</p>
             @if(session('error'))
                 <div class="alert-error">{{ session('error') }}</div>
             @endif
-            <form method="POST" action="/login">
+            <form method="POST" action="/reset-password">
                 @csrf
+                <input type="hidden" name="token" value="{{ $token }}">
+                
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com">
+                    <input type="email" name="email" value="{{ old('email', $email) }}" placeholder="you@example.com" required readonly>
                     @error('email')<p class="error">{{ $message }}</p>@enderror
                 </div>
+                
                 <div class="form-group">
-                    <label>Password</label>
+                    <label>New Password</label>
                     <div class="password-wrapper">
-                        <input type="password" name="password" id="password" placeholder="Your password">
+                        <input type="password" name="password" id="password" placeholder="Min 6 characters" required>
                         <button type="button" class="toggle-password" data-target="password">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <!-- Eye icon -->
+                            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
                     @error('password')<p class="error">{{ $message }}</p>@enderror
-                    <div style="text-align: right; margin-top: 0.5rem; font-size: 0.8rem;">
-                        <a href="/forgot-password" style="color: var(--navy); text-decoration: none; font-weight: 500; opacity: 0.7;">Forgot Password?</a>
+                </div>
+                
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Repeat password" required>
+                        <button type="button" class="toggle-password" data-target="password_confirmation">
+                            <!-- Eye icon -->
+                            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
                     </div>
                 </div>
-                <button type="submit" class="btn-submit">Sign In</button>
+                
+                <button type="submit" class="btn-submit">Reset Password</button>
             </form>
-            @if(session('success'))
-            <script>
-                setTimeout(function () {
-                    var banner = document.querySelector('.flash-banner');
-                    if (banner) banner.remove();
-                }, 3000);
-            </script>
-            @endif
-            <script>
-                document.querySelectorAll('.toggle-password').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const targetId = this.getAttribute('data-target');
-                        const input = document.getElementById(targetId);
-                        const isPassword = input.type === 'password';
-                        input.type = isPassword ? 'text' : 'password';
-
-                        if (isPassword) {
-                            this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-                        } else {
-                            this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-                        }
-                    });
-                });
-            </script>
-            <p class="link">Don't have an account? <a href="/register">Register</a></p>
         </div>
     </div>
+
+    <script>
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+
+                if (isPassword) {
+                    // Show eye-slash SVG
+                    this.innerHTML = `<svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+                } else {
+                    // Show eye SVG
+                    this.innerHTML = `<svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

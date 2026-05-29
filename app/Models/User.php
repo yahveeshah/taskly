@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->use_type === 'group' && $this->role === 'member';
     }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
 }

@@ -4,6 +4,32 @@
 .profile-card{padding:2rem}
 .profile-card h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--navy);margin-bottom:1.5rem}
 .error{color:#dc2626;font-size:0.75rem;margin-top:0.3rem}
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+.password-wrapper input {
+    padding-right: 2.75rem;
+    width: 100%;
+}
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: var(--navy);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 0;
+}
+.toggle-password:hover {
+    opacity: 1;
+}
 @media (max-width:760px){.profile-grid{grid-template-columns:1fr}.profile-card{padding:1.5rem}}
 </style>
 
@@ -28,11 +54,21 @@
         <form method="POST" action="{{ route('profile.password') }}">
             @csrf @method('PATCH')
             <div class="ui-field"><label>New Password</label>
-                <input type="password" name="password" placeholder="Min 6 characters">
+                <div class="password-wrapper">
+                    <input type="password" name="password" id="password" placeholder="Min 6 characters">
+                    <button type="button" class="toggle-password" data-target="password">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
                 @error('password')<p class="error">{{ $message }}</p>@enderror
             </div>
             <div class="ui-field"><label>Confirm Password</label>
-                <input type="password" name="password_confirmation" placeholder="Repeat password">
+                <div class="password-wrapper">
+                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Repeat password">
+                    <button type="button" class="toggle-password" data-target="password_confirmation">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="ui-button ui-button-primary">Update Password</button>
         </form>
@@ -66,4 +102,21 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+
+            if (isPassword) {
+                this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            } else {
+                this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+            }
+        });
+    });
+</script>
 </x-layout>

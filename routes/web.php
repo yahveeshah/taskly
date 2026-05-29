@@ -41,6 +41,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
     Route::get('/chat/members', [\App\Http\Controllers\ChatController::class, 'getTeamMembers'])->name('chat.members');
+    Route::delete('/chat/messages/{message}', [\App\Http\Controllers\ChatController::class, 'destroy'])->name('chat.messages.destroy');
+    Route::delete('/chat/clear', [\App\Http\Controllers\ChatController::class, 'clearHistory'])->name('chat.clear');
 });
+
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'store'])->name('password.email');
+    Route::get('/reset-password/{token}', [\App\Http\Controllers\ResetPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [\App\Http\Controllers\ResetPasswordController::class, 'store'])->name('password.update');
+});
+
 
 

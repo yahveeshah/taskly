@@ -1,6 +1,30 @@
 <x-layout>
     <x-slot name="title">Team Chat</x-slot>
 
+    <style>
+        .msg-bubble {
+            position: relative;
+        }
+        .msg-bubble .delete-msg-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .msg-bubble:hover .delete-msg-btn {
+            opacity: 1;
+        }
+    </style>
+
     <div style="display: flex; gap: 1.5rem; height: 75vh;">
         <!-- Sidebar -->
         <div class="ui-card" style="width: 250px; flex-shrink: 0; display: flex; flex-direction: column; padding: 1rem;">
@@ -23,23 +47,37 @@
                 <h2 style="margin: 0; font-size: 1.2rem; font-family: 'DM Sans', sans-serif;">
                     {{ $type === 'group' ? 'Team Group Chat' : 'Direct Message' }}
                 </h2>
-                @if($type === 'group')
-                <div id="onlineStatus" style="font-size: 0.8rem; color: #27ae60; display: flex; align-items: center; gap: 0.4rem;">
-                    <div style="width: 8px; height: 8px; background: #27ae60; border-radius: 50%;"></div>
-                    <span id="onlineCount">Connecting...</span>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    @if($type === 'group')
+                    <div id="onlineStatus" style="font-size: 0.8rem; color: #27ae60; display: flex; align-items: center; gap: 0.4rem;">
+                        <div style="width: 8px; height: 8px; background: #27ae60; border-radius: 50%;"></div>
+                        <span id="onlineCount">Connecting...</span>
+                    </div>
+                    @endif
+
+                    @if(($type === 'group' && auth()->user()->isManager()) || $type === 'dm')
+                    <button id="clearHistoryBtn" class="ui-button ui-button-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer;">Clear History</button>
+                    @endif
                 </div>
-                @endif
             </div>
 
             <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
                 @foreach($messages as $msg)
-                    <div style="max-width: 75%; padding: 0.6rem 1rem; border-radius: 12px; {{ $msg->sender_id === auth()->id() ? 'align-self: flex-end; background: var(--lav); color: var(--navy); border-bottom-right-radius: 2px;' : 'align-self: flex-start; background: var(--surface-field); border: 1px solid var(--lm); border-bottom-left-radius: 2px;' }}">
-                        @if($msg->sender_id !== auth()->id())
+                    @if($msg->sender_id === auth()->id())
+                        <div class="msg-bubble" style="max-width: 75%; padding: 0.6rem 1.8rem 0.6rem 1rem; border-radius: 12px; align-self: flex-end; background: var(--lav); color: var(--navy); border-bottom-right-radius: 2px;">
+                            <button class="delete-msg-btn" data-id="{{ $msg->id }}" title="Delete Message">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                            <div style="line-height: 1.4; word-break: break-word;">{!! nl2br(e($msg->body)) !!}</div>
+                            <div style="font-size: 0.65rem; opacity: 0.6; text-align: right; margin-top: 0.3rem;">{{ $msg->created_at->format('H:i') }}</div>
+                        </div>
+                    @else
+                        <div style="max-width: 75%; padding: 0.6rem 1rem; border-radius: 12px; align-self: flex-start; background: var(--surface-field); border: 1px solid var(--lm); border-bottom-left-radius: 2px;">
                             <strong style="display: block; font-size: 0.75rem; margin-bottom: 0.2rem; color: var(--navy);">{{ $msg->sender->name }}</strong>
-                        @endif
-                        <div style="line-height: 1.4; word-break: break-word;">{!! nl2br(e($msg->body)) !!}</div>
-                        <div style="font-size: 0.65rem; opacity: 0.6; text-align: right; margin-top: 0.3rem;">{{ $msg->created_at->format('H:i') }}</div>
-                    </div>
+                            <div style="line-height: 1.4; word-break: break-word;">{!! nl2br(e($msg->body)) !!}</div>
+                            <div style="font-size: 0.65rem; opacity: 0.6; text-align: right; margin-top: 0.3rem;">{{ $msg->created_at->format('H:i') }}</div>
+                        </div>
+                    @endif
                 @endforeach
             </div>
 
@@ -129,11 +167,22 @@
             function appendMessage(msg) {
                 const isMine = msg.sender_id == currentUserId;
                 const div = document.createElement('div');
-                div.style = `max-width: 75%; padding: 0.6rem 1rem; border-radius: 12px; ${isMine ? 'align-self: flex-end; background: var(--lav); color: var(--navy); border-bottom-right-radius: 2px;' : 'align-self: flex-start; background: var(--surface-field); border: 1px solid var(--lm); border-bottom-left-radius: 2px;'}`;
+                if (isMine) {
+                    div.className = 'msg-bubble';
+                    div.style = `max-width: 75%; padding: 0.6rem 1.8rem 0.6rem 1rem; border-radius: 12px; align-self: flex-end; background: var(--lav); color: var(--navy); border-bottom-right-radius: 2px;`;
+                } else {
+                    div.style = `max-width: 75%; padding: 0.6rem 1rem; border-radius: 12px; align-self: flex-start; background: var(--surface-field); border: 1px solid var(--lm); border-bottom-left-radius: 2px;`;
+                }
                 
                 let html = '';
-                if (!isMine) {
-                    html += `<strong style="display: block; font-size: 0.75rem; margin-bottom: 0.2rem; color: var(--navy);">${msg.sender.name}</strong>`;
+                if (isMine) {
+                    html += `
+                        <button class="delete-msg-btn" data-id="${msg.id}" title="Delete Message">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    `;
+                } else {
+                    html += `<strong style="display: block; font-size: 0.75rem; margin-bottom: 0.2rem; color: var(--navy);">${msg.sender ? msg.sender.name : 'User'}</strong>`;
                 }
                 
                 // parse created_at to time
@@ -153,6 +202,62 @@
                 div.innerHTML = html;
                 messagesContainer.appendChild(div);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // Message deletion event delegation
+            messagesContainer.addEventListener('click', async function(e) {
+                const btn = e.target.closest('.delete-msg-btn');
+                if (!btn) return;
+
+                const msgId = btn.getAttribute('data-id');
+                const bubble = btn.closest('.msg-bubble');
+
+                if (confirm('Are you sure you want to delete this message?')) {
+                    try {
+                        const res = await fetch(`/chat/messages/${msgId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        if (res.ok) {
+                            bubble.remove();
+                        }
+                    } catch (err) {
+                        console.error('Failed to delete message', err);
+                    }
+                }
+            });
+
+            // Clear history event handler
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            if (clearHistoryBtn) {
+                clearHistoryBtn.addEventListener('click', async function() {
+                    if (confirm('Are you sure you want to clear the conversation history? This cannot be undone.')) {
+                        try {
+                            const res = await fetch('/chat/clear', {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    type: chatType,
+                                    with: withUserId
+                                })
+                            });
+
+                            if (res.ok) {
+                                messagesContainer.innerHTML = '';
+                            }
+                        } catch (err) {
+                            console.error('Failed to clear history', err);
+                        }
+                    }
+                });
             }
 
             document.getElementById('chatForm').addEventListener('submit', async function(e) {

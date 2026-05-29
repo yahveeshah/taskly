@@ -16,7 +16,7 @@ class AiChatService
     public function getResponse(User $user, string $userMessage): string
     {
         $response = $this->agentFor($user, $userMessage)
-            ->prompt($userMessage, provider: Lab::Gemini, model: 'gemini-2.0-flash');
+            ->prompt($userMessage, provider: Lab::Groq, model: 'llama-3.3-70b-versatile');
         $this->persistConversation($user, $userMessage, $response->text);
 
         return $response->text;
@@ -25,7 +25,7 @@ class AiChatService
     public function streamResponse(User $user, string $userMessage): StreamableAgentResponse
     {
         return $this->agentFor($user, $userMessage)
-            ->stream($userMessage, provider: Lab::Gemini, model: 'gemini-2.0-flash');
+            ->stream($userMessage, provider: Lab::Groq, model: 'llama-3.3-70b-versatile');
     }
 
     public function persistConversation(User $user, string $userMessage, string $assistantMessage): void

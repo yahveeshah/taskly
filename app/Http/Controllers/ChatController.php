@@ -81,4 +81,56 @@ class ChatController extends Controller
 
         return response()->json($members);
     }
+
+    public function destroy(Message $message)
+    {
+        if ($message->sender_id !== auth()->id()) {
+            abort(403, 'Unauthorized to delete this message.');
+        }
+
+        $message->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function clearHistory(Request $request)
+    {
+        $user = auth()->user();
+        $type = $request->input('type', 'group');
+
+        if ($type === 'group') {
+            if (!$user->team_id || !$user->isManager()) {
+                abort(403, 'Only managers can clear group history.');
+            }
+
+            Message::where('team_id', $user->team_id)
+                ->where('type', 'group')
+                ->delete();
+        } elseif ($type === 'dm') {
+            $withUserId = $request->input('with');
+            if (!$withUserId) {
+                abort(400, 'Missing user ID for DM clear.');
+            }
+
+            // Mark current user's sent DMs as cleared
+            Message::where('type', 'dm')
+                ->where('sender_id', $user->id)
+                ->where('receiver_id', $withUserId)
+                ->update(['cleared_by_sender' => true]);
+
+            // Mark current user's received DMs as cleared
+            Message::where('type', 'dm')
+                ->where('sender_id', $withUserId)
+                ->where('receiver_id', $user->id)
+                ->update(['cleared_by_receiver' => true]);
+
+            // Clean up DB: delete messages where both users have cleared
+            Message::where('type', 'dm')
+                ->where('cleared_by_sender', true)
+                ->where('cleared_by_receiver', true)
+                ->delete();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

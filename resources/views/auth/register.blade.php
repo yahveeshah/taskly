@@ -30,6 +30,31 @@
         .form-group label,.choice-title{display:block;font-size:0.72rem;font-weight:700;color:var(--navy);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:0.5rem}
         .form-group input{width:100%;padding:0.78rem 1rem;background:var(--card);border:2px solid var(--lav);border-radius:10px;color:var(--navy);font-family:'DM Sans',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s}
         .form-group input:focus{border-color:var(--navy)}
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .password-wrapper input {
+            padding-right: 2.75rem;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: var(--navy);
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            padding: 0;
+        }
+        .toggle-password:hover {
+            opacity: 1;
+        }
         .choice-section{border-top:1px solid var(--lm);margin:1.4rem 0 1.1rem;padding-top:1.2rem}
         .choice-section h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--navy);margin-bottom:0.8rem}
         .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem}
@@ -83,12 +108,22 @@
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" name="password" placeholder="Min 6 characters">
+                    <div class="password-wrapper">
+                        <input type="password" name="password" id="password" placeholder="Min 6 characters">
+                        <button type="button" class="toggle-password" data-target="password">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                     @error('password')<p class="error">{{ $message }}</p>@enderror
                 </div>
                 <div class="form-group">
                     <label>Confirm Password</label>
-                    <input type="password" name="password_confirmation" placeholder="Repeat password">
+                    <div class="password-wrapper">
+                        <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Repeat password">
+                        <button type="button" class="toggle-password" data-target="password_confirmation">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="choice-section">
@@ -139,6 +174,21 @@
             input.addEventListener('change', syncTeamFields);
         });
         syncTeamFields();
+
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+
+                if (isPassword) {
+                    this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+                } else {
+                    this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+                }
+            });
+        });
     </script>
 </body>
 </html>
